@@ -70,7 +70,7 @@ export function applicationMenuTemplate(
         ...(mac
             ? [
                   {
-                      label: 'IPTVnator',
+                      label: 'Tech Home TV',
                       submenu: [
                           { role: 'about' },
                           { type: 'separator' },

@@ -261,3 +261,15 @@ app-settings-about-section {
         grid-template-columns: 1fr;
     }
 }
+
+.built-on {
+    margin: 4px 0 12px;
+    padding: 0 4px;
+    font-size: 12px;
+    color: var(--app-muted-color);
+
+    a {
+        color: inherit;
+        text-decoration: underline;
+    }
+}

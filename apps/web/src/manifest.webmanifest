@@ -1,7 +1,7 @@
 {
-    "name": "IPTVnator",
-    "description": "IPTVnator is a tool to watch and manage your IPTV playlists.",
-    "short_name": "IPTVnator",
+    "name": "Tech Home TV",
+    "description": "Tech Home TV is a player for your own IPTV playlists.",
+    "short_name": "Tech Home TV",
     "theme_color": "#1b1c1c",
     "background_color": "#1b1c1c",
     "display": "standalone",

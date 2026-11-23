@@ -31,7 +31,9 @@ export function getIptvnatorDataRoot(): string {
         return ensureDirectory(dataDir);
     }
 
-    return ensureDirectory(join(homedir(), '.iptvnator'));
+    // Tech Home TV keeps its own data folder so it never shares a database
+    // with an installed copy of the original IPTVnator.
+    return ensureDirectory(join(homedir(), '.techhometv'));
 }
 
 export function getIptvnatorDatabaseDirectory(): string {

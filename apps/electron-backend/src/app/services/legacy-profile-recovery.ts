@@ -1,6 +1,9 @@
 import { app, BrowserWindow, dialog, session } from 'electron';
 import { mkdtemp, rm, writeFile, access } from 'fs/promises';
-import { copyLegacyIndexedDb } from './legacy-profile';
+import {
+    copyLegacyIndexedDb,
+    LEGACY_PROFILE_ADOPTION_ENABLED,
+} from './legacy-profile';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { getDatabase } from '../database/connection';
@@ -88,6 +91,7 @@ export function recoverLegacyProfile(): Promise<void> {
 }
 
 async function recover(): Promise<void> {
+    if (!LEGACY_PROFILE_ADOPTION_ENABLED) return;
     const root =
         process.env.IPTVNATOR_E2E_DATA_DIR?.trim() || app.getPath('appData');
     const legacy = join(root, 'electron-backend');

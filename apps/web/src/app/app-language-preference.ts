@@ -5,11 +5,11 @@ export const PREFERRED_LANGUAGE_STORAGE_KEY = 'iptvnator:preferred-language';
 /** Read the saved hint before IndexedDB settings are available. */
 export function getInitialLanguage(): Language {
     try {
-        return normalizeAppLanguage(
-            localStorage.getItem(PREFERRED_LANGUAGE_STORAGE_KEY)
-        );
+        const saved = localStorage.getItem(PREFERRED_LANGUAGE_STORAGE_KEY);
+        // Tech Home TV starts in Arabic until the user picks another language.
+        return saved ? normalizeAppLanguage(saved) : Language.ARABIC;
     } catch {
-        return Language.ENGLISH;
+        return Language.ARABIC;
     }
 }
 

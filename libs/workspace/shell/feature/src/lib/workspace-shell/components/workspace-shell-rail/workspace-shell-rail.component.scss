@@ -182,6 +182,11 @@
             color: var(--app-on-surface);
         }
     }
+
+    // Always-visible contact shortcut (WhatsApp brand green).
+    .rail-whatsapp mat-icon {
+        color: #25d366;
+    }
 }
 
 @media (max-width: 640px) {

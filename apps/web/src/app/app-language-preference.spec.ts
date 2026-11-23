@@ -21,15 +21,15 @@ describe('cold-start language preference', () => {
         expect(getInitialLanguage()).toBe(Language.PORTUGUESE_PORTUGAL);
     });
 
-    it('defaults to English when there is no hint', () => {
-        expect(getInitialLanguage()).toBe(Language.ENGLISH);
+    it('defaults to Arabic when there is no hint', () => {
+        expect(getInitialLanguage()).toBe(Language.ARABIC);
     });
 
-    it('defaults to English when browser storage cannot be read', () => {
+    it('defaults to Arabic when browser storage cannot be read', () => {
         jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
             throw new Error('Storage disabled');
         });
-        expect(getInitialLanguage()).toBe(Language.ENGLISH);
+        expect(getInitialLanguage()).toBe(Language.ARABIC);
     });
 
     it('does not prevent a language switch when browser storage is full', () => {

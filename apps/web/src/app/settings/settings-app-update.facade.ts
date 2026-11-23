@@ -15,6 +15,9 @@ import { AppUpdateInstallService } from '../services/app-update-install.service'
 import { AppUpdateReleaseNotesDialogComponent } from './app-update-release-notes-dialog.component';
 import { SettingsAppVersionService } from './settings-app-version.service';
 
+/** Off for Tech Home TV: updates are distributed manually. */
+const UPSTREAM_VERSION_CHECK_ENABLED = false as boolean;
+
 const APP_UPDATE_STATUS_LOAD_ATTEMPTS = 60;
 const APP_UPDATE_STATUS_LOAD_RETRY_DELAY_MS = 250;
 
@@ -143,6 +146,9 @@ export class SettingsAppUpdateFacade {
      * settings UI
      */
     checkAppVersion(): void {
+        // Tech Home TV ships updates by hand: never compare against the
+        // upstream project's releases.
+        if (!UPSTREAM_VERSION_CHECK_ENABLED) return;
         this.appVersion
             .getAppVersion()
             .pipe(take(1))

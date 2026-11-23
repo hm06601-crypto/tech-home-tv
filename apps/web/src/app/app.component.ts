@@ -210,7 +210,10 @@ export class AppComponent implements OnInit {
                         settings.themeAccent
                     );
                 } else {
+                    // First run: Tech Home TV defaults (Arabic, green accent).
+                    void this.dateLocales.use(Language.ARABIC);
                     this.detectDarkMode();
+                    void this.settingsService.changeThemeAccent('green');
                 }
             });
     }

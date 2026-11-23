@@ -38,6 +38,18 @@
             </a>
         }
         <a
+            class="rail-shortcut nav-item rail-whatsapp"
+            href="https://wa.me/9647744644492"
+            target="_blank"
+            rel="noreferrer noopener"
+            [matTooltip]="'WORKSPACE.SHELL.RAIL_WHATSAPP' | translate"
+            [matTooltipPosition]="'right'"
+            [attr.aria-label]="'WORKSPACE.SHELL.RAIL_WHATSAPP' | translate"
+            data-test-id="rail-whatsapp"
+        >
+            <mat-icon aria-hidden="true">chat</mat-icon>
+        </a>
+        <a
             class="rail-shortcut nav-item"
             routerLink="/workspace/settings"
             [class.is-active]="isSettingsRoute()"

@@ -52,7 +52,7 @@ import {
     stopHostedServerOnQuit,
 } from './app/services/hosted-server.service';
 
-app.setName('iptvnator');
+app.setName('Tech Home TV');
 
 traceStartupPhase('compile-cache', () => readCompileCacheOutcome());
 // Before anything can open the shared database connection.
@@ -192,7 +192,8 @@ export default class Main {
             .catch(() => undefined);
         await loadingMainWindow;
         const { module, result } = await deferred.trigger();
-        void result.appUpdateService.checkForUpdatesOnStartup();
+        // Tech Home TV: updates are distributed manually; no startup check.
+        void result.appUpdateService;
 
         await module.finishStartupAfterFirstLoad();
 

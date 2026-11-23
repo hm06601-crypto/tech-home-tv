@@ -7,11 +7,8 @@ import {
     ViewEncapsulation,
     ChangeDetectionStrategy,
 } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
+import { FormGroup } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
 import { TranslateModule } from '@ngx-translate/core';
 import {
     AppUpdateChannel,
@@ -33,14 +30,7 @@ interface SettingsUpdateStatusChip {
 @Component({
     selector: 'app-settings-about-section',
     providers: [provideFormFieldDefaults()],
-    imports: [
-        MatButtonModule,
-        MatFormFieldModule,
-        MatIconModule,
-        MatSelectModule,
-        ReactiveFormsModule,
-        TranslateModule,
-    ],
+    imports: [MatIconModule, TranslateModule],
     templateUrl: './settings-about-section.component.html',
     encapsulation: ViewEncapsulation.None,
     changeDetection: ChangeDetectionStrategy.OnPush,

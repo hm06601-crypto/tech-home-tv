@@ -4,6 +4,19 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslateService } from '@ngx-translate/core';
 import { merge } from 'rxjs';
 
+/**
+ * Tech Home TV: lay the whole interface out right-to-left for Arabic.
+ * Set to `false` to keep the original left-to-right layout (Arabic text is
+ * still shown) if a screen looks wrong in RTL.
+ */
+export const ENABLE_RTL_LAYOUT = true as boolean;
+
+const RTL_LANGUAGES: ReadonlySet<string> = new Set(['ar', 'ary']);
+
+export function isRtlLanguage(appLanguage?: string | null): boolean {
+    return RTL_LANGUAGES.has((appLanguage ?? '').trim().toLowerCase());
+}
+
 /** UI language codes that are not valid BCP 47 tags. */
 const DOCUMENT_LANGUAGE_OVERRIDES: Readonly<Record<string, string>> = {
     by: 'be',
@@ -37,9 +50,10 @@ export function syncDocumentLanguage(): void {
     const document = inject(DOCUMENT);
     const translate = inject(TranslateService);
     const apply = (): void => {
-        document.documentElement.lang = toDocumentLanguage(
-            translate.currentLang || translate.getDefaultLang()
-        );
+        const active = translate.currentLang || translate.getDefaultLang();
+        document.documentElement.lang = toDocumentLanguage(active);
+        document.documentElement.dir =
+            ENABLE_RTL_LAYOUT && isRtlLanguage(active) ? 'rtl' : 'ltr';
     };
 
     apply();

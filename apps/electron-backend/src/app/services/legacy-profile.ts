@@ -2,11 +2,18 @@ import { existsSync } from 'fs';
 import { cp } from 'fs/promises';
 import { join, resolve } from 'path';
 
+/**
+ * Tech Home TV never adopts the profile of an older IPTVnator install.
+ * Typed `boolean` so the guard below is not folded away at compile time.
+ */
+export const LEGACY_PROFILE_ADOPTION_ENABLED = false as boolean;
+
 /** v0.19 packaged package.json used Nx's project name, electron-backend. */
 export function selectLegacyProfile(
     appData: string,
     current: string
 ): string | null {
+    if (!LEGACY_PROFILE_ADOPTION_ENABLED) return null;
     const legacy = join(appData, 'electron-backend');
     if (resolve(legacy) === resolve(current)) return null;
     // Any current Chromium persistence is authoritative, including an empty
