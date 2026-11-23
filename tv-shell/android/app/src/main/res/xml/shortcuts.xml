@@ -3,7 +3,7 @@
     <shortcut android:shortcutId="device_settings" android:enabled="true"
         android:icon="@mipmap/ic_launcher" android:shortcutShortLabel="@string/device_settings_shortcut">
         <intent android:action="android.intent.action.VIEW"
-            android:targetPackage="org.tvshell.iptvnator"
+            android:targetPackage="com.techhome.tv"
             android:targetClass="org.tvshell.iptvnator.ui.SettingsActivity" />
     </shortcut>
 </shortcuts>
