@@ -1,0 +1,125 @@
+name: Tech Home TV - Windows (EXE)
+
+# Builds the Windows installer (setup.exe) of Tech Home TV.
+# Run it from the Actions tab: "Tech Home TV - Windows (EXE)" > "Run workflow".
+# The installer is attached to the run as an artifact and, when
+# "create_release" is ticked, also to a GitHub release named <release_tag>.
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: "Also publish the installer as a GitHub release"
+        type: boolean
+        default: false
+      release_tag:
+        description: "Release tag (same tag as the Android workflow to keep both files together)"
+        type: string
+        default: "v1.0.0"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6.1.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Inject build commit
+        shell: bash
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+        run: node tools/build/inject-build-commit.mjs
+
+      # Windows installer for 64-bit only (same override the upstream workflow applies).
+      - name: Build for x64 only
+        shell: bash
+        run: |
+          node -e "
+            const fs = require('fs');
+            const cfg = JSON.parse(fs.readFileSync('electron-builder.json', 'utf8'));
+            for (const target of cfg.win.target) {
+              if (target && typeof target === 'object') target.arch = ['x64'];
+            }
+            fs.writeFileSync('electron-builder.json', JSON.stringify(cfg, null, 4) + '\n');
+          "
+
+      - name: Build frontend
+        run: pnpm nx build web --skip-nx-cache
+
+      # The embedded MPV engine is an optional extra and its Windows runtime is
+      # downloaded from a third party that only keeps files for 30 days, so it
+      # is left out: the built-in players and external MPV/VLC work as usual.
+      - name: Build backend
+        shell: bash
+        env:
+          IPTVNATOR_REQUIRE_EMBEDDED_MPV: "0"
+        run: pnpm run build:backend
+
+      - name: Make the installer
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IPTVNATOR_REQUIRE_EMBEDDED_MPV: "0"
+        run: pnpm run make:app -- --publishPolicy=never
+
+      - name: List the result
+        shell: bash
+        run: ls -la dist/executables
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: TechHomeTV-windows
+          path: |
+            dist/executables/*-setup.exe
+            dist/executables/latest.yml
+            dist/executables/*.blockmap
+          if-no-files-found: error
+
+  release:
+    if: ${{ inputs.create_release }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download the installer
+        uses: actions/download-artifact@v7
+        with:
+          name: TechHomeTV-windows
+          path: dist
+
+      - name: Publish the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* \
+              --target "$GITHUB_SHA" \
+              --title "Tech Home TV $TAG" \
+              --notes "Tech Home TV - IPTV player. Download the Windows installer (setup.exe) or the Android APK below."
+          fi
+          echo "Release: https://github.com/${GH_REPO}/releases/tag/${TAG}"

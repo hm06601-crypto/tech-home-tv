@@ -1,0 +1,157 @@
+name: Tech Home TV - Android (APK)
+
+# Builds the Android APK of Tech Home TV (the web app bundled in a native shell).
+# Run it from the Actions tab: "Tech Home TV - Android (APK)" > "Run workflow".
+#
+# Signing: add these four repository secrets (Settings > Secrets and variables > Actions)
+#   TVSHELL_KEYSTORE_B64, TVSHELL_KEYSTORE_PASSWORD, TVSHELL_KEY_ALIAS, TVSHELL_KEY_PASSWORD
+# Without them the APK is signed with a public debug key: it installs, but anyone could
+# sign a look-alike update with the same key. Create your own key before distributing.
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: "Also publish the APK as a GitHub release"
+        type: boolean
+        default: false
+      release_tag:
+        description: "Release tag (same tag as the Windows workflow to keep both files together)"
+        type: string
+        default: "v1.0.0"
+
+permissions:
+  contents: read
+
+env:
+  SHELL_DIR: tv-shell
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      apk_name: ${{ steps.apk.outputs.name }}
+      signer: ${{ steps.apk.outputs.signer }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6.1.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build the web app (same configuration as the Docker image)
+        shell: bash
+        env:
+          NX_TASKS_RUNNER_DYNAMIC_OUTPUT: false
+          BUILD_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          node tools/build/inject-build-commit.mjs
+          pnpm nx build web --configuration=pwa --skip-nx-cache
+          test -f dist/apps/web/index.html
+
+      - name: Bundle the web app into the Android shell
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$SHELL_DIR/scripts/bundle-pwa.sh" dist/apps/web
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Install Android 36 SDK and NDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          packages: platforms;android-36 ndk;28.2.13676358
+
+      - name: Build the APK
+        id: apk
+        shell: bash
+        working-directory: ${{ env.SHELL_DIR }}/android
+        env:
+          TVSHELL_KEYSTORE_B64: ${{ secrets.TVSHELL_KEYSTORE_B64 }}
+          TVSHELL_KEYSTORE_PASSWORD: ${{ secrets.TVSHELL_KEYSTORE_PASSWORD }}
+          TVSHELL_KEY_ALIAS: ${{ secrets.TVSHELL_KEY_ALIAS }}
+          TVSHELL_KEY_PASSWORD: ${{ secrets.TVSHELL_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # versionCode: commit time in minutes, so every build upgrades the previous one.
+          TVSHELL_VERSION_CODE=$(( $(git log -1 --format=%ct HEAD) / 60 ))
+          export TVSHELL_VERSION_CODE
+          SIGNER=debug
+          if [ -n "${TVSHELL_KEYSTORE_B64:-}" ]; then
+            echo "$TVSHELL_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/techhome.keystore"
+            export TVSHELL_KEYSTORE_PATH="$RUNNER_TEMP/techhome.keystore"
+            SIGNER=release
+          else
+            echo "::warning::No signing key configured: the APK is signed with the public debug key. Add the TVSHELL_* secrets before distributing it."
+          fi
+          ./gradlew --no-daemon :app:assembleRelease
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -f "$APK"
+          VERSION=$(grep -oP "versionName '\K[^']+" app/build.gradle)
+          OUT="TechHomeTV-${VERSION}.apk"
+          mkdir -p ../../dist
+          cp "$APK" "../../dist/$OUT"
+          # Source of the bundled LGPL FFmpeg build, published next to the APK.
+          cp app/build/generated/media3Ffmpeg/source/ffmpeg-*.tar.xz ../../dist/
+          echo "name=$OUT" >> "$GITHUB_OUTPUT"
+          echo "signer=$SIGNER" >> "$GITHUB_OUTPUT"
+          echo "APK $OUT signed with the $SIGNER key"
+
+      - name: Upload the APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: TechHomeTV-android
+          path: |
+            dist/${{ steps.apk.outputs.name }}
+            dist/ffmpeg-*.tar.xz
+          if-no-files-found: error
+
+  release:
+    if: ${{ inputs.create_release }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download the APK
+        uses: actions/download-artifact@v7
+        with:
+          name: TechHomeTV-android
+          path: dist
+
+      - name: Publish the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* \
+              --target "$GITHUB_SHA" \
+              --title "Tech Home TV $TAG" \
+              --notes "Tech Home TV - IPTV player. Download the Windows installer (setup.exe) or the Android APK below."
+          fi
+          echo "Release: https://github.com/${GH_REPO}/releases/tag/${TAG}"
